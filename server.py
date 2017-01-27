@@ -48,9 +48,9 @@ class MyServerProtocol(WebSocketServerProtocol):
     def __init__(self):
         super().__init__()
         self.lock = Lock()
-        self.mesh = meshLoop(self.sock, self.onMeshMessage)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        self.mesh = meshLoop(self.sock, self.onMeshMessage)
         self.antFactory = AntFactory(self.onAntMessage)
         #self.antFactory.enableFilter()
         #self.antFactory.addToFilter(bikeId)
@@ -72,8 +72,8 @@ class MyServerProtocol(WebSocketServerProtocol):
 
     def onOpen(self):
         print("WebSocket connection open.")
-        self.node.start(self.antFactory.parseMessage, self.onAntErrorMessage)
         self.sock.bind(('', 9999))
+        self.node.start(self.antFactory.parseMessage, self.onAntErrorMessage)
         self.mesh.start()
 
     def onMessage(self, payload, isBinary):
@@ -120,9 +120,10 @@ class MyServerProtocol(WebSocketServerProtocol):
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {0}".format(reason))
         self.node.stop()
-        self.sock.close()
-        self.mesh.stop()
-        self.mesh.join()
+        if self.mesh.is_alive():
+            self.mesh.stop()
+            self.mesh.join()
+            self.sock.close()
 
     def onCommandSetDifficulty(self, data=None):
         if data == "easy":
