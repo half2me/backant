@@ -48,6 +48,7 @@ class MyServerProtocol(WebSocketServerProtocol):
     def __init__(self):
         super().__init__()
         self.lock = Lock()
+        self.mesh = meshLoop(self.sock, self.onMeshMessage)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self.antFactory = AntFactory(self.onAntMessage)
@@ -73,7 +74,6 @@ class MyServerProtocol(WebSocketServerProtocol):
         print("WebSocket connection open.")
         self.node.start(self.antFactory.parseMessage, self.onAntErrorMessage)
         self.sock.bind(('', 9999))
-        self.mesh = meshLoop(self.sock, self.onMeshMessage)
         self.mesh.start()
 
     def onMessage(self, payload, isBinary):
