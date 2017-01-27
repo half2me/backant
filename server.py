@@ -1,7 +1,5 @@
 import json
 import socket
-import time
-import zmq
 import sys
 from threading import Lock, Thread
 
@@ -94,19 +92,31 @@ class MyServerProtocol(WebSocketServerProtocol):
             print(e)
 
     def onAntMessage(self, payload):
-        pass
+        if payload.msg.deviceType == 121:  # S&C
+            self.sendJsonMeshMessage({"Update": {
+                payload.msg.deviceNumber: {
+                    "cadence": payload.cadence,
+                    "speed": payload.speed(2096),
+                }
+            }})
+        elif payload.msg.deviceType == 11:  # Power
+            self.sendJsonMeshMessage({"Update": {
+                payload.msg.deviceNumber: {
+                    "power": payload.averagePower,
+                }
+            }})
 
-    def onAntErrorMessage(self, error):
-        pass
+    def onAntErrorMessage(self, e):
+        print(e)
 
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {0}".format(reason))
 
     def onCommandStartRace(self, data=None):
-        pass
+        self.sendJsonMeshMessage({"StartRace": True})
 
     def onCommandStopRace(self, data=None):
-        pass
+        self.sendJsonMeshMessage({"StopRace": True})
 
     def onMeshCommandStartRace(self, data=None):
         pass
