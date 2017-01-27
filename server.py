@@ -14,6 +14,13 @@ from twisted.internet import reactor
 from twisted.python import log
 
 
+def synchronized(method):
+    """ Work with instance method only !!! """
+    def new_method(self, *arg, **kws):
+        with self.lock:
+            return method(self, *arg, **kws)
+    return new_method
+
 class meshLoop(Thread):
     def __init__(self, socket, callback):
         super().__init__()
@@ -47,10 +54,12 @@ class MyServerProtocol(WebSocketServerProtocol):
         self.node.enableRxScanMode()
         self.node.start(self.antFactory.parseMessage, self.onAntErrorMessage)
 
+    @synchronized
     def sendJsonMessage(self, msg):
         payload = json.dumps(msg, ensure_ascii=False).encode('utf8')
         self.sendMessage(payload)
 
+    @synchronized
     def sendJsonMeshMessage(self, msg):
         payload = json.dumps(msg, ensure_ascii=False).encode('utf8')
         self.sock.sendto(payload, 0, ("255.255.255.255", 9999))
