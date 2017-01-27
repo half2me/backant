@@ -114,6 +114,14 @@ class MyServerProtocol(WebSocketServerProtocol):
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {0}".format(reason))
 
+    def onCommandSetDifficulty(self, data=None):
+        if data == "easy":
+            # Set stepper motor position
+            pass
+        if data == "hard":
+            # Set stepper motor position
+            pass
+
     def onCommandStartRace(self, data=None):
         self.sendJsonMeshMessage({"StartRace": bikeId})
 
