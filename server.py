@@ -1,4 +1,5 @@
 import json
+import random
 import socket
 import sys
 from threading import Lock, Thread
@@ -11,6 +12,7 @@ from libAnt.profiles.factory import Factory as AntFactory
 from twisted.internet import reactor
 from twisted.python import log
 
+bikeId = random.randrange(1000, 9000)
 
 def synchronized(method):
     """ Work with instance method only !!! """
@@ -47,7 +49,7 @@ class MyServerProtocol(WebSocketServerProtocol):
         self.poller.register(self.sock, zmq.POLLIN)
         self.antFactory = AntFactory(self.onAntMessage)
         #self.antFactory.enableFilter()
-        #self.antFactory.addToFilter(11111)
+        #self.antFactory.addToFilter(bikeId)
         self.node = Node(PcapDriver("dummy.cap"), 'PcapNode')
         self.node.enableRxScanMode()
         self.node.start(self.antFactory.parseMessage, self.onAntErrorMessage)
@@ -113,19 +115,20 @@ class MyServerProtocol(WebSocketServerProtocol):
         print("WebSocket connection closed: {0}".format(reason))
 
     def onCommandStartRace(self, data=None):
-        self.sendJsonMeshMessage({"StartRace": True})
+        self.sendJsonMeshMessage({"StartRace": bikeId})
 
     def onCommandStopRace(self, data=None):
-        self.sendJsonMeshMessage({"StopRace": True})
+        self.sendJsonMeshMessage({"StopRace": bikeId})
 
     def onMeshCommandStartRace(self, data=None):
-        pass
+        if data != bikeId:
+            self.sendJsonMessage({"StartRace": bikeId})
 
     def onMeshCommandStopRace(self, data=None):
-        pass
+        self.sendJsonMessage({"StopRace": bikeId})
 
     def onMeshCommandUpdate(self, data=None):
-        pass
+        self.sendJsonMessage({"Update": data})
 
 log.startLogging(sys.stdout)
 
