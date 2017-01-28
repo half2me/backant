@@ -12,7 +12,7 @@ from libAnt.profiles.factory import Factory as AntFactory
 from twisted.internet import reactor
 from twisted.python import log
 
-bikeId = random.randrange(10000, 99999)
+bikeId = 19052
 
 def synchronized(method):
     """ Work with instance method only !!! """
@@ -52,9 +52,9 @@ class MyServerProtocol(WebSocketServerProtocol):
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self.mesh = meshLoop(self.sock, self.onMeshMessage)
         self.antFactory = AntFactory(self.onAntMessage)
-        #self.antFactory.enableFilter()
-        #self.antFactory.addToFilter(bikeId)
-        self.node = Node(PcapDriver("demo.pcap"), 'DemoNode')
+        self.antFactory.enableFilter()
+        self.antFactory.addToFilter(bikeId)
+        self.node = Node(PcapDriver("19052.pcap"), 'DemoNode')
         self.node.enableRxScanMode()
 
     @synchronized
@@ -141,10 +141,10 @@ class MyServerProtocol(WebSocketServerProtocol):
 
     def onMeshCommandStartRace(self, data=None):
         if data != bikeId:
-            self.sendJsonMessage({"StartRace": bikeId})
+            self.sendJsonMessage({"StartRace": data})
 
     def onMeshCommandStopRace(self, data=None):
-        self.sendJsonMessage({"StopRace": bikeId})
+        self.sendJsonMessage({"StopRace": data})
 
     def onMeshCommandUpdate(self, data=None):
         self.sendJsonMessage({"Update": data})
