@@ -86,7 +86,7 @@ class MyServerProtocol(WebSocketServerProtocol):
 
     def onOpen(self):
         print("WebSocket connection open.")
-        self.sendJsonMeshMessage({"CurrentPlayer": int(config["bikeId"])})
+        self.sendJsonMessage({"CurrentPlayer": int(config["bikeId"])})
         self.sock.bind(('', int(config["meshPort"])))
         self.node.start(self.antFactory.parseMessage, self.onAntErrorMessage)
         self.mesh.start()
