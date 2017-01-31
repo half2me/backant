@@ -7,6 +7,7 @@ from threading import Lock, Thread, Event
 import zmq
 from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory
 from libAnt.drivers.pcap import PcapDriver
+from libAnt.drivers.serial import SerialDriver
 from libAnt.node import Node
 from libAnt.profiles.factory import Factory as AntFactory
 from twisted.internet import reactor
@@ -14,17 +15,25 @@ from twisted.python import log
 
 config = { # default values
     "bikeId": 0,
-    "webSocketPort": 9000,
+    "webSocketPort": 8080,
+    "webSocketIP": "127.0.0.1",
     "meshPort": 9999,
-    "meshBufferSize": 5000
+    "meshBufferSize": 5000,
+    "debugAntPcap": False,
+    "antSerialDev": "/dev/ttyUSB0",
+    "disableAntFilter": False
 }
 
 # Parse config values
 try:
     with open("settings.txt", 'r') as file:
         for line in file:
-            key, value = line.strip('"\n').split('=')
-            config[key] = value
+            try:
+                key, value = line.strip('"\n').split('=')
+                if key[0] != "#":
+                    config[key] = value
+            except ValueError:
+                pass
 except FileNotFoundError as e:
     print (e)
 
@@ -66,15 +75,19 @@ class MyServerProtocol(WebSocketServerProtocol):
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self.mesh = meshLoop(self.sock, self.onMeshMessage)
         self.antFactory = AntFactory(self.onAntMessage)
-        self.antFactory.enableFilter()
-        self.antFactory.addToFilter(int(config["bikeId"]))
-        self.node = Node(PcapDriver("19052.pcap"), 'DemoNode')
+        if not bool(config["disableAntFilter"]):
+            self.antFactory.enableFilter()
+            self.antFactory.addToFilter(int(config["bikeId"]))
+        if bool(config["debugAntPcap"]):
+            self.node = Node(PcapDriver(config["debugAntPcap"]))
+        else:
+            self.node = Node(SerialDriver(config["antSerialDev"]))
         self.node.enableRxScanMode()
 
     @synchronized
     def sendJsonMessage(self, msg):
         payload = json.dumps(msg, ensure_ascii=False).encode('utf8')
-        self.sendMessage(payload)
+        self.sendMessage(payload=payload)
 
     @synchronized
     def sendJsonMeshMessage(self, msg):
@@ -165,7 +178,7 @@ class MyServerProtocol(WebSocketServerProtocol):
         self.sendJsonMessage({"Update": data})
 
 log.startLogging(sys.stdout)
-factory = WebSocketServerFactory(u"ws://127.0.0.1:" + str(config["webSocketPort"]))
+factory = WebSocketServerFactory(u"ws://" + str(config["webSocketIP"]) + ":" + str(config["webSocketPort"]))
 factory.protocol = MyServerProtocol
 
 reactor.listenTCP(int(config["webSocketPort"]), factory)
