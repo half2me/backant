@@ -12,7 +12,21 @@ from libAnt.profiles.factory import Factory as AntFactory
 from twisted.internet import reactor
 from twisted.python import log
 
-bikeId = 19052
+config = { # default values
+    "bikeId": 0,
+    "webSocketPort": 9000,
+    "meshPort": 9999,
+    "meshBufferSize": 5000
+}
+
+# Parse config values
+try:
+    with open("settings.txt", 'r') as file:
+        for line in file:
+            key, value = line.strip('"\n').split('=')
+            config[key] = value
+except FileNotFoundError as e:
+    print (e)
 
 def synchronized(method):
     """ Work with instance method only !!! """
@@ -37,7 +51,7 @@ class meshLoop(Thread):
         while not self.stopper.isSet():
             events = dict(self.poller.poll(1))
             if self.sock.fileno() in events:
-                msg, addrinfo = self.sock.recvfrom(5000)
+                msg, addrinfo = self.sock.recvfrom(config["meshBufferSize"])
                 try:
                     self.callback(msg)
                 except Exception as e:
@@ -53,7 +67,7 @@ class MyServerProtocol(WebSocketServerProtocol):
         self.mesh = meshLoop(self.sock, self.onMeshMessage)
         self.antFactory = AntFactory(self.onAntMessage)
         self.antFactory.enableFilter()
-        self.antFactory.addToFilter(bikeId)
+        self.antFactory.addToFilter(config["bikeId"])
         self.node = Node(PcapDriver("19052.pcap"), 'DemoNode')
         self.node.enableRxScanMode()
 
@@ -65,14 +79,14 @@ class MyServerProtocol(WebSocketServerProtocol):
     @synchronized
     def sendJsonMeshMessage(self, msg):
         payload = json.dumps(msg, ensure_ascii=False).encode('utf8')
-        self.sock.sendto(payload, 0, ("255.255.255.255", 9999))
+        self.sock.sendto(payload, 0, ("255.255.255.255", config["meshPort"]))
 
     def onConnect(self, request):
         print("Client connecting: {0}".format(request.peer))
 
     def onOpen(self):
         print("WebSocket connection open.")
-        self.sock.bind(('', 9999))
+        self.sock.bind(('', config["meshPort"]))
         self.node.start(self.antFactory.parseMessage, self.onAntErrorMessage)
         self.mesh.start()
 
@@ -134,13 +148,13 @@ class MyServerProtocol(WebSocketServerProtocol):
             pass
 
     def onCommandStartRace(self, data=None):
-        self.sendJsonMeshMessage({"StartRace": bikeId})
+        self.sendJsonMeshMessage({"StartRace": config["bikeId"]})
 
     def onCommandStopRace(self, data=None):
-        self.sendJsonMeshMessage({"StopRace": bikeId})
+        self.sendJsonMeshMessage({"StopRace": config["bikeId"]})
 
     def onMeshCommandStartRace(self, data=None):
-        if data != bikeId:
+        if data != config["bikeId"]:
             self.sendJsonMessage({"StartRace": data})
 
     def onMeshCommandStopRace(self, data=None):
@@ -151,8 +165,8 @@ class MyServerProtocol(WebSocketServerProtocol):
 
 log.startLogging(sys.stdout)
 
-factory = WebSocketServerFactory(u"ws://127.0.0.1:9000")
+factory = WebSocketServerFactory(u"ws://127.0.0.1:" + str(config["webSocketPort"]))
 factory.protocol = MyServerProtocol
 
-reactor.listenTCP(9000, factory)
+reactor.listenTCP(config["webSocketPort"], factory)
 reactor.run()

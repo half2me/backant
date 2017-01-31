@@ -1,0 +1,4 @@
+bikeId=19052
+webSocketPort=9000
+meshPort=9999
+meshBufferSize=5000
