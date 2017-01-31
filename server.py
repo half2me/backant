@@ -51,7 +51,7 @@ class meshLoop(Thread):
         while not self.stopper.isSet():
             events = dict(self.poller.poll(1))
             if self.sock.fileno() in events:
-                msg, addrinfo = self.sock.recvfrom(config["meshBufferSize"])
+                msg, addrinfo = self.sock.recvfrom(int(config["meshBufferSize"]))
                 try:
                     self.callback(msg)
                 except Exception as e:
@@ -67,7 +67,7 @@ class MyServerProtocol(WebSocketServerProtocol):
         self.mesh = meshLoop(self.sock, self.onMeshMessage)
         self.antFactory = AntFactory(self.onAntMessage)
         self.antFactory.enableFilter()
-        self.antFactory.addToFilter(config["bikeId"])
+        self.antFactory.addToFilter(int(config["bikeId"]))
         self.node = Node(PcapDriver("19052.pcap"), 'DemoNode')
         self.node.enableRxScanMode()
 
@@ -79,14 +79,14 @@ class MyServerProtocol(WebSocketServerProtocol):
     @synchronized
     def sendJsonMeshMessage(self, msg):
         payload = json.dumps(msg, ensure_ascii=False).encode('utf8')
-        self.sock.sendto(payload, 0, ("255.255.255.255", config["meshPort"]))
+        self.sock.sendto(payload, 0, ("255.255.255.255", int(config["meshPort"])))
 
     def onConnect(self, request):
         print("Client connecting: {0}".format(request.peer))
 
     def onOpen(self):
         print("WebSocket connection open.")
-        self.sock.bind(('', config["meshPort"]))
+        self.sock.bind(('', int(config["meshPort"])))
         self.node.start(self.antFactory.parseMessage, self.onAntErrorMessage)
         self.mesh.start()
 
@@ -148,17 +148,17 @@ class MyServerProtocol(WebSocketServerProtocol):
             pass
 
     def onCommandStartRace(self, data=None):
-        self.sendJsonMeshMessage({"StartRace": config["bikeId"]})
+        self.sendJsonMeshMessage({"StartRace": int(config["bikeId"])})
 
     def onCommandStopRace(self, data=None):
-        self.sendJsonMeshMessage({"StopRace": config["bikeId"]})
+        self.sendJsonMeshMessage({"StopRace": int(config["bikeId"])})
 
     def onMeshCommandStartRace(self, data=None):
         if data != config["bikeId"]:
-            self.sendJsonMessage({"StartRace": data})
+            self.sendJsonMessage({"StartRace": int(config["bikeId"])})
 
     def onMeshCommandStopRace(self, data=None):
-        self.sendJsonMessage({"StopRace": data})
+        self.sendJsonMessage({"StopRace": int(config["bikeId"])})
 
     def onMeshCommandUpdate(self, data=None):
         self.sendJsonMessage({"Update": data})
@@ -168,5 +168,5 @@ log.startLogging(sys.stdout)
 factory = WebSocketServerFactory(u"ws://127.0.0.1:" + str(config["webSocketPort"]))
 factory.protocol = MyServerProtocol
 
-reactor.listenTCP(config["webSocketPort"], factory)
+reactor.listenTCP(int(config["webSocketPort"]), factory)
 reactor.run()
