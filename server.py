@@ -86,6 +86,7 @@ class MyServerProtocol(WebSocketServerProtocol):
 
     def onOpen(self):
         print("WebSocket connection open.")
+        self.sendJsonMeshMessage({"CurrentPlayer": int(config["bikeId"])})
         self.sock.bind(('', int(config["meshPort"])))
         self.node.start(self.antFactory.parseMessage, self.onAntErrorMessage)
         self.mesh.start()
@@ -164,7 +165,6 @@ class MyServerProtocol(WebSocketServerProtocol):
         self.sendJsonMessage({"Update": data})
 
 log.startLogging(sys.stdout)
-
 factory = WebSocketServerFactory(u"ws://127.0.0.1:" + str(config["webSocketPort"]))
 factory.protocol = MyServerProtocol
 
