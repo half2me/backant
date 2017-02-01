@@ -13,7 +13,7 @@ from libAnt.profiles.factory import Factory as AntFactory
 from twisted.internet import reactor
 from twisted.python import log
 
-config = { # default values
+config = {  # default values
     "bikeId": 0,
     "webSocketPort": 8080,
     "webSocketIP": "127.0.0.1",
@@ -35,14 +35,18 @@ try:
             except ValueError:
                 pass
 except FileNotFoundError as e:
-    print (e)
+    print(e)
+
 
 def synchronized(method):
     """ Work with instance method only !!! """
+
     def new_method(self, *arg, **kws):
         with self.lock:
             return method(self, *arg, **kws)
+
     return new_method
+
 
 class meshLoop(Thread):
     def __init__(self, socket, callback):
@@ -66,8 +70,8 @@ class meshLoop(Thread):
                 except Exception as e:
                     print(e)
 
-class MyServerProtocol(WebSocketServerProtocol):
 
+class MyServerProtocol(WebSocketServerProtocol):
     def __init__(self):
         super().__init__()
         self.lock = Lock()
@@ -176,6 +180,7 @@ class MyServerProtocol(WebSocketServerProtocol):
 
     def onMeshCommandUpdate(self, data=None):
         self.sendJsonMessage({"Update": data})
+
 
 log.startLogging(sys.stdout)
 factory = WebSocketServerFactory(u"ws://" + str(config["webSocketIP"]) + ":" + str(config["webSocketPort"]))
