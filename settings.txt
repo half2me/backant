@@ -14,7 +14,7 @@ webSocketIP=0.0.0.0
 #meshBufferSize=5000
 
 ### Send all received ANT+ data, not just for our bikeID
-#disableAntFilter=1
+disableAntFilter=1
 
 ### For debugging, use the specified pcap file for ANT+ data
 debugAntPcap=dbg.pcap
