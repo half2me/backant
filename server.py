@@ -1,16 +1,14 @@
 import json
 import socket
-import sys
 from threading import Lock, Thread, Event
 
 import zmq
-from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory
+import asyncio
+from autobahn.asyncio.websocket import WebSocketServerProtocol, WebSocketServerFactory
 from libAnt.drivers.pcap import PcapDriver
 from libAnt.drivers.serial import SerialDriver
 from libAnt.node import Node
 from libAnt.profiles.factory import Factory as AntFactory
-from twisted.internet import reactor
-from twisted.python import log
 
 config = {  # default values
     "bikeId": 0,
@@ -180,10 +178,17 @@ class MyServerProtocol(WebSocketServerProtocol):
     def onMeshCommandUpdate(self, data=None):
         self.sendJsonMessage({"Update": data})
 
-
-log.startLogging(sys.stdout)
 factory = WebSocketServerFactory(u"ws://" + str(config["webSocketIP"]) + ":" + str(config["webSocketPort"]))
 factory.protocol = MyServerProtocol
 
-reactor.listenTCP(int(config["webSocketPort"]), factory)
-reactor.run()
+loop = asyncio.get_event_loop()
+coro = loop.create_server(factory, str(config["webSocketIP"]), int(config["webSocketPort"]))
+server = loop.run_until_complete(coro)
+
+try:
+    loop.run_forever()
+except KeyboardInterrupt:
+    pass
+finally:
+    server.close()
+    loop.close()
