@@ -39,7 +39,7 @@ motor = False
 try:
     from motor import motor
     motor = motor()
-except ModuleNotFoundError:
+except:
     print("Stepper motor support disabled!")
 
 
@@ -157,7 +157,7 @@ class MyServerProtocol(WebSocketServerProtocol):
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {0}".format(reason))
         if motor:
-            self.factory.loop.call_soon_threadsafe(motor.high())
+            motor.high()
         self.node.stop()
         if self.mesh.is_alive():
             self.mesh.stop()
