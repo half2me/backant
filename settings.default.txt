@@ -1,11 +1,11 @@
 ### Set the bikeID
-bikeId=19052
+#bikeId=1
 
 ### WebSocket Port to use
 #webSocketPort=8080
 
 ### WebSocket IP: use 0.0.0.0 for all interfaces, 127.0.0.1 for local only (default)
-webSocketIP=0.0.0.0
+#webSocketIP=127.0.0.1
 
 ### Port to use for UDP broadcast communication
 #meshPort=9999
@@ -14,10 +14,10 @@ webSocketIP=0.0.0.0
 #meshBufferSize=5000
 
 ### Send all received ANT+ data, not just for our bikeID
-disableAntFilter=1
+#disableAntFilter=1
 
 ### For debugging, use the specified pcap file for ANT+ data
-debugAntPcap=dbg.pcap
+#debugAntPcap=dbg.pcap
 
 ### ANT+ dongle serial device
-#antSerialDev=/dev/ttyUSB0
+antSerialDev=/dev/ttyUSB0
