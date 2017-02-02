@@ -1,9 +1,9 @@
+import asyncio
 import json
 import socket
 from threading import Lock, Thread, Event
 
 import zmq
-import asyncio
 from autobahn.asyncio.websocket import WebSocketServerProtocol, WebSocketServerFactory
 from libAnt.drivers.pcap import PcapDriver
 from libAnt.drivers.serial import SerialDriver
@@ -33,6 +33,14 @@ try:
                 pass
 except FileNotFoundError as e:
     print(e)
+
+motor = False
+
+try:
+    from motor import motor
+    motor = motor()
+except:
+    print("Stepper motor support disabled!")
 
 
 def synchronized(method):
@@ -148,6 +156,8 @@ class MyServerProtocol(WebSocketServerProtocol):
 
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {0}".format(reason))
+        if motor:
+            motor.high()
         self.node.stop()
         if self.mesh.is_alive():
             self.mesh.stop()
@@ -155,12 +165,10 @@ class MyServerProtocol(WebSocketServerProtocol):
             self.sock.close()
 
     def onCommandSetDifficulty(self, data=None):
-        if data == "easy":
-            # Set stepper motor position
-            pass
-        if data == "hard":
-            # Set stepper motor position
-            pass
+        if motor and data == "easy":
+            self.factory.loop.call_soon_threadsafe(motor.low())
+        if motor and data == "hard":
+            self.factory.loop.call_soon_threadsafe(motor.high())
 
     def onCommandStartRace(self, data=None):
         self.sendJsonMeshMessage({"StartRace": int(config["bikeId"])})
@@ -177,6 +185,7 @@ class MyServerProtocol(WebSocketServerProtocol):
 
     def onMeshCommandUpdate(self, data=None):
         self.sendJsonMessage({"Update": data})
+
 
 factory = WebSocketServerFactory(u"ws://" + str(config["webSocketIP"]) + ":" + str(config["webSocketPort"]))
 factory.protocol = MyServerProtocol
