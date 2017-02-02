@@ -129,7 +129,6 @@ class MyServerProtocol(WebSocketServerProtocol):
             print(e)
 
     def onAntMessage(self, payload):
-        print(payload.msg.deviceNumber)
         if payload.msg.deviceType == 121:  # S&C
             self.sendJsonMeshMessage({"Update": {
                 payload.msg.deviceNumber: {
