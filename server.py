@@ -23,7 +23,7 @@ config = {  # default values
 
 # Parse config values
 try:
-    with open("settings.txt", 'r') as file:
+    with open("/boot/settings.txt", 'r') as file:
         for line in file:
             try:
                 key, value = line.strip('"\n').split('=')
