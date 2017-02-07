@@ -177,8 +177,7 @@ class MyServerProtocol(WebSocketServerProtocol):
         self.sendJsonMeshMessage({"StopRace": int(config["bikeId"])})
 
     def onMeshCommandStartRace(self, data=None):
-        if data != config["bikeId"]:
-            self.sendJsonMessage({"StartRace": int(config["bikeId"])})
+        self.sendJsonMessage({"StartRace": int(config["bikeId"])})
 
     def onMeshCommandStopRace(self, data=None):
         self.sendJsonMessage({"StopRace": int(config["bikeId"])})
