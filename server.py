@@ -19,7 +19,6 @@ config = {  # default values
     "debugAntPcap": False,
     "antSerialDev": "/dev/ttyUSB0",
     "disableAntFilter": False,
-    "singleton": False
 }
 
 # Parse config values
@@ -33,7 +32,17 @@ try:
             except ValueError:
                 pass
 except FileNotFoundError as e:
-    print(e)
+    try:
+        with open("settings.txt", 'r') as file:
+            for line in file:
+                try:
+                    key, value = line.strip('"\n').split('=')
+                    if key[0] != "#":
+                        config[key] = value
+                except ValueError:
+                    pass
+    except FileNotFoundError as e:
+        print(e)
 
 motor = False
 
@@ -42,16 +51,6 @@ try:
     motor = motor()
 except:
     print("Stepper motor support disabled!")
-
-
-def synchronized(method):
-    """ Work with instance method only !!! """
-
-    def new_method(self, *arg, **kws):
-        with self.lock:
-            return method(self, *arg, **kws)
-
-    return new_method
 
 
 class meshLoop(Thread):
@@ -94,18 +93,13 @@ class MyServerProtocol(WebSocketServerProtocol):
             self.node = Node(SerialDriver(config["antSerialDev"]))
         self.node.enableRxScanMode()
 
-    @synchronized
     def sendJsonMessage(self, msg):
         payload = json.dumps(msg, ensure_ascii=False).encode('utf8')
         self.sendMessage(payload=payload)
 
-    @synchronized
     def sendJsonMeshMessage(self, msg):
-        if not bool(config["singleton"]):
-            payload = json.dumps(msg, ensure_ascii=False).encode('utf8')
-            self.sock.sendto(payload, 0, ("255.255.255.255", int(config["meshPort"])))
-        else:
-            self.sendJsonMessage(msg)
+        payload = json.dumps(msg, ensure_ascii=False).encode('utf8')
+        self.sock.sendto(payload, 0, ("255.255.255.255", int(config["meshPort"])))
 
     def onConnect(self, request):
         print("Client connecting: {0}".format(request.peer))
@@ -162,11 +156,14 @@ class MyServerProtocol(WebSocketServerProtocol):
         print("WebSocket connection closed: {0}".format(reason))
         if motor:
             motor.high()
+        self.sock.close()
         self.node.stop()
         if self.mesh.is_alive():
+            print("Waiting for mesh thread to stop...")
             self.mesh.stop()
             self.mesh.join()
-            self.sock.close()
+            print("Mesh thread finished...")
+
 
     def onCommandSetDifficulty(self, data=None):
         if motor and data == "easy":
