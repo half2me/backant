@@ -18,7 +18,8 @@ config = {  # default values
     "meshBufferSize": 5000,
     "debugAntPcap": False,
     "antSerialDev": "/dev/ttyUSB0",
-    "disableAntFilter": False
+    "disableAntFilter": False,
+    "singleton": False
 }
 
 # Parse config values
@@ -100,8 +101,11 @@ class MyServerProtocol(WebSocketServerProtocol):
 
     @synchronized
     def sendJsonMeshMessage(self, msg):
-        payload = json.dumps(msg, ensure_ascii=False).encode('utf8')
-        self.sock.sendto(payload, 0, ("255.255.255.255", int(config["meshPort"])))
+        if not bool(config["singleton"]):
+            payload = json.dumps(msg, ensure_ascii=False).encode('utf8')
+            self.sock.sendto(payload, 0, ("255.255.255.255", int(config["meshPort"])))
+        else:
+            self.sendJsonMessage(msg)
 
     def onConnect(self, request):
         print("Client connecting: {0}".format(request.peer))

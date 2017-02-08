@@ -21,3 +21,6 @@
 
 ### ANT+ dongle serial device
 antSerialDev=/dev/ttyUSB0
+
+### Enable this if you want to run in single-player mode without having a network interface
+#singleton=1
