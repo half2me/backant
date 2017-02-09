@@ -1,7 +1,7 @@
 import asyncio
 import json
 import socket
-from threading import Lock, Thread, Event
+from threading import Lock
 
 import zmq
 from autobahn.asyncio.websocket import WebSocketServerProtocol, WebSocketServerFactory
@@ -52,35 +52,17 @@ try:
 except:
     print("Stepper motor support disabled!")
 
-class meshLoop(Thread):
-    def __init__(self, socket, callback):
-        super().__init__()
-        self.sock = socket
-        self.callback = callback
-        self.poller = zmq.Poller()
-        self.poller.register(self.sock, zmq.POLLIN)
-        self.stopper = Event()
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+poller = zmq.Poller()
+poller.register(sock, zmq.POLLIN)
 
-    def stop(self):
-        self.stopper.set()
-
-    def run(self):
-        while not self.stopper.isSet():
-            events = dict(self.poller.poll(1))
-            if self.sock.fileno() in events:
-                msg, addrinfo = self.sock.recvfrom(int(config["meshBufferSize"]))
-                try:
-                    self.callback(msg)
-                except Exception as e:
-                    print(e)
 
 class MyServerProtocol(WebSocketServerProtocol):
     def __init__(self):
         super().__init__()
         self.lock = Lock()
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        self.mesh = meshLoop(self.sock, self.onMeshMessage)
+        self.task = self.factory.loop.create_task(self.meshPoll)
         self.antFactory = AntFactory(self.onAntMessage)
         if not bool(config["disableAntFilter"]):
             self.antFactory.enableFilter()
@@ -90,6 +72,17 @@ class MyServerProtocol(WebSocketServerProtocol):
         else:
             self.node = Node(SerialDriver(config["antSerialDev"]))
         self.node.enableRxScanMode()
+
+    @asyncio.coroutine
+    def meshPoll(self):
+        global sock
+        while True:
+            events = dict(poller.poll(1))
+            if sock.fileno() in events:
+                msg, addrinfo = sock.recvfrom(int(config["meshBufferSize"]))
+                self.onMeshMessage(msg)
+            yield from asyncio.sleep()
+
 
     def sendJsonMessage(self, msg):
         payload = json.dumps(msg, ensure_ascii=False).encode('utf8')
@@ -152,6 +145,7 @@ class MyServerProtocol(WebSocketServerProtocol):
 
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {0}".format(reason))
+        self.task.cancel()
         if motor:
             motor.high()
         self.sock.close()
