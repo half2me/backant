@@ -52,7 +52,6 @@ try:
 except:
     print("Stepper motor support disabled!")
 
-
 class meshLoop(Thread):
     def __init__(self, socket, callback):
         super().__init__()
@@ -74,7 +73,6 @@ class meshLoop(Thread):
                     self.callback(msg)
                 except Exception as e:
                     print(e)
-
 
 class MyServerProtocol(WebSocketServerProtocol):
     def __init__(self):
@@ -171,14 +169,20 @@ class MyServerProtocol(WebSocketServerProtocol):
         if motor and data == "hard":
             self.factory.loop.call_soon_threadsafe(motor.high())
 
-    def onCommandStartRace(self, data=None):
-        self.sendJsonMeshMessage({"StartRace": int(config["bikeId"])})
+    def onCommandStartSequence(self, data=None):
+        self.sendJsonMeshMessage({"StartSequence": int(config["bikeId"])})
 
     def onCommandStopRace(self, data=None):
         self.sendJsonMeshMessage({"StopRace": int(config["bikeId"])})
 
-    def onMeshCommandStartRace(self, data=None):
-        self.sendJsonMessage({"StartRace": int(config["bikeId"])})
+    def onCommandReadyForRace(self, data=None):
+        self.sendJsonMeshMessage({"ReadyForRace": int(config["bikeId"])})
+
+    def onMeshCommandStartSequence(self, data=None):
+        self.sendJsonMessage({"StartSequence": int(config["bikeId"])})
+
+    def onMeshCommandReadyForRace(self, data=None):
+        self.sendJsonMessage({"ReadyForRace": int(config["bikeId"])})
 
     def onMeshCommandStopRace(self, data=None):
         self.sendJsonMessage({"StopRace": int(config["bikeId"])})
