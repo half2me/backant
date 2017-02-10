@@ -13,13 +13,13 @@ class motor():
         self.mh.getMotor(3).run(Adafruit_MotorHAT.RELEASE)
         self.mh.getMotor(4).run(Adafruit_MotorHAT.RELEASE)
 
-    def high(self):
+    def low(self):
         if not self.state:
             self.stepper.step(100, Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.DOUBLE)
             self.release()
             self.state = True
 
-    def low(self):
+    def high(self):
         if self.state:
             self.stepper.step(100, Adafruit_MotorHAT.BACKWARD, Adafruit_MotorHAT.DOUBLE)
             self.release()
