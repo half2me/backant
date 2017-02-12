@@ -141,11 +141,12 @@ class MyServerProtocol(WebSocketServerProtocol):
                 }
             }})
         elif payload.msg.deviceType == 11:  # Power
-            self.sendJsonMeshMessage({"Update": {
-                payload.msg.deviceNumber: {
-                    "power": payload.averagePower,
-                }
-            }})
+            if payload.dataPageNumber == 16:  # Simple Power data page
+                self.sendJsonMeshMessage({"Update": {
+                    payload.msg.deviceNumber: {
+                        "power": payload.averagePower,
+                    }
+                }})
 
     def onAntErrorMessage(self, e):
         print(e)
